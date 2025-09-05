@@ -21,33 +21,42 @@ while cap.isOpened():  #keeps the webcam running
     lower_red1 = np.array([0, 120, 70])
     upper_red1 = np.array([10, 255, 255])
     lower_red2 = np.array([170, 120, 70])
-    lower_red2 = np.array([170, 120, 70])
     upper_red2 = np.array([180, 255, 255])
+
+    lower_green = np.array([36, 50, 70])
+    upper_green = np.array([89, 255, 255])
+
+    lower_blue = np.array([94, 80, 2])
+    upper_blue = np.array([126, 255, 255])
 
 
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
     mask = mask1 + mask2
-#cv2.inRange() → Makes a mask where the color is within the given range.
-#mask1 + mask2 → Combines both masks for full red detection.
-#Mask = 1 where cloak is, 0 everywhere else.
+    #cv2.inRange() → Makes a mask where the color is within the given range.
+    #mask1 + mask2 → Combines both masks for full red detection.
+    #Mask = 1 where cloak is, 0 everywhere else.
 
-mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3,3), np.uint8)) #removes small tiny dots
-mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, np.ones((3,3), np.uint8)) # makes the detected area bigger and smoother
+    mask_blue = cv2.inRange(hsv, lower_blue, upper_blue)
+    mask_green = cv2.inRange(hsv, lower_green, upper_green)
 
-mask_inv = cv2.bitwise_not(mask) #msk_inv is everything except the cloak.
+    mask = mask + mask_blue + mask_green
 
-res1= cv2.bitwise_and(background, background, mask=mask) #bg where the cloak is present
-res2 = cv2.bitwise_and(frame, frame, mask=mask_inv) #bg where the cloak is NOT present
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))   #removes small tiny dots
+    mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, np.ones((5,5), np.uint8)) # makes the detected area bigger and smoother
 
-final_output = cv2.addWeighted(res1,1,res2,1,0)
+    no_cloak_area = cv2.bitwise_not(mask) #no_cloak_area is everything except the cloak.
 
-cv2.imshow("Invisibility Cloak", final_output)
+    res1= cv2.bitwise_and(background, background, mask=mask) #bg where the cloak is present
+    res2 = cv2.bitwise_and(frame, frame, mask=no_cloak_area)      #bg where the cloak is NOT present
 
-if cv2.waitKey(1) & 0xFF == 27:  #press Esc to exit
-    break
+    final_output = cv2.addWeighted(res1,1.0,res2,1.0,0)
+
+    cv2.imshow("Invisibility Cloak", final_output)
+
+    if cv2.waitKey(1) & 0xFF == 27:  #press Esc to exit
+        break
 
 cap.release()
 cv2.destroyAllWindows()
-
 
